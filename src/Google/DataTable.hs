@@ -1,11 +1,12 @@
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE OverloadedStrings         #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- | Types for providing JSON data for the Google Charts API. See:  
 -- https://developers.google.com/chart/interactive/docs/reference#dataparam
 module Google.DataTable
     ( Cell (..) 
     , Column (..)
+    , Row (..)
     , DataTable (..)
     ) where
 
@@ -14,6 +15,7 @@ import Data.Aeson.Types (Pair)
 import Data.Time ( Day, LocalTime (..), TimeOfDay (..), UTCTime (..)
                  , toGregorian, utc, utcToLocalTime)
 import Data.Text (Text)
+import GHC.Generics (Generic)
 import Text.Printf (printf)
 import qualified Data.Aeson as A
 import qualified Data.Text as T
@@ -46,15 +48,20 @@ data Column =
            }
     deriving Show
 
-data Cell = forall a. ToJSON a =>
+data Cell =
     Cell { v :: !(Maybe Value)
          , f :: !(Maybe Text)
-         , p :: !(Maybe a)
          }
+    deriving Show
+
+data Row =
+    Row { c :: ![Cell] }
+    deriving (Generic, Show)
 
 data DataTable =
-    DataTable { cols :: ![Column] }
-    deriving Show
+    DataTable { cols :: ![Column] 
+              , rows :: ![Row] }
+    deriving (Generic, Show)
 
 -- | ToJSON instance for type.
 instance ToJSON Type where
@@ -76,12 +83,18 @@ instance ToJSON Value where
 instance ToJSON Column where
     toJSON col =
         let xs = maybeAddAs "type" (Just $ type_ col) $
-                 maybeAddAs "id" (id_ col)              $
+                 maybeAddAs "id" (id_ col)            $
                  maybeAddAs "label" (label col) []
         in object xs
 
 instance ToJSON Cell where
-    toJSON cell = object (maybeAddAs "v" (v cell) [])
+    toJSON cell = 
+        let xs = maybeAddAs "v" (v cell) $
+                 maybeAddAs "f" (f cell) []
+        in object xs
+
+instance ToJSON Row
+instance ToJSON DataTable
 
 maybeAddAs :: ToJSON a => Text -> Maybe a -> [Pair] -> [Pair]
 maybeAddAs name (Just val) xs = name .= val : xs
