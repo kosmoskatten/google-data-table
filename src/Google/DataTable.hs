@@ -8,6 +8,8 @@ module Google.DataTable
     , Column (..)
     , Row (..)
     , DataTable (..)
+    , Type (..)
+    , Value (..)
     ) where
 
 import Data.Aeson (ToJSON (..), (.=), object)
@@ -28,7 +30,7 @@ data Type = BooleanT
           | TimeOfDayT
     deriving Show
 
-data Value = Boolean {-# UNPACK #-} !Bool
+data Value = Boolean !Bool
            | Integral {-# UNPACK #-} !Int
            | Float {-# UNPACK #-} !Double
            | String !Text
